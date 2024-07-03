@@ -4,3 +4,7 @@ ext/
 ramulator2
 *.so
 log/
+output.trace
+my.yaml
+*.log
+*.trace

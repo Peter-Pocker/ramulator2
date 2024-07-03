@@ -1,9 +1,8 @@
 Frontend:
   impl: MyRWTrace
   clock_ratio: 1
-  path: example.trace
-  period: 1
-  retries: 3
+  path: memory_access.trace
+  seed: 1718537219
                 
 
 MemorySystem:
@@ -28,4 +27,5 @@ MemorySystem:
     plugins:
 
   AddrMapper:
-    impl: RoBaRaCoCh
+    impl: CustomizedMapper
+    mapping: 1RA-14R-1BG-2R-2B-1BG-7C
