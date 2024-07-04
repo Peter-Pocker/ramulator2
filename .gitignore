@@ -8,3 +8,4 @@ output.trace
 my.yaml
 *.log
 *.trace
+plot/

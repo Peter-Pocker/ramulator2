@@ -1,7 +1,8 @@
 Frontend:
   impl: MyRWTrace
   clock_ratio: 1
-  path: memory_access.trace
+  path: consecutive.trace
+  period: 3
   seed: 1718537219
                 
 

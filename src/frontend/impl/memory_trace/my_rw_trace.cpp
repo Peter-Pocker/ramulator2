@@ -101,6 +101,7 @@ class MyRWTrace : public IFrontEnd, public Implementation {
       }
       bool isRetry = (cur_status.retries_left > 0);
       if (isRetry) {
+        std::cout << "Retrying" << std::endl;
         cur_status.retries_left--;
       } else { // Stop retrying and launch a new request.
         cur_status.curTraceLet = get_next_tracelet();
