@@ -9,3 +9,4 @@ my.yaml
 *.log
 *.trace
 plot/
+test.sh

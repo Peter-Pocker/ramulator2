@@ -52,6 +52,9 @@ class MyRWTrace : public IFrontEnd, public Implementation {
     size_t m_tracelet_length;
     size_t m_curr_trace_idx = 0;
     size_t m_curr_tracelet_idx = 0; // Index in a trace's tracelets.
+    size_t num_trace_sent = 0;
+    size_t num_read_sent = 0;
+    size_t num_write_sent = 0;
 
     LaunchSetting launch_setting;
 
@@ -101,13 +104,11 @@ class MyRWTrace : public IFrontEnd, public Implementation {
       }
       bool isRetry = (cur_status.retries_left > 0);
       if (isRetry) {
-        std::cout << "Retrying" << std::endl;
-        cur_status.retries_left--;
+        // std::cout << "Retrying" << std::endl;
       } else { // Stop retrying and launch a new request.
         cur_status.curTraceLet = get_next_tracelet();
       }
       if (!cur_status.curTraceLet) { // ALl requests have been launched.
-        ++m_clk;
         return;
       }
       const Trace& t = *(cur_status.curTraceLet);
@@ -121,20 +122,27 @@ class MyRWTrace : public IFrontEnd, public Implementation {
 
       if (success) {
         if (!t.is_write) {
+          ++num_read_sent;
           cur_status.m_num_req_pending++;
+        } else {
+          ++num_write_sent;
         }
         cur_status.retries_left = 0;
       } else {
         // std::cout << "[REQUEST FAILED] trace ID: " << m_curr_trace_idx << ". tracelet ID: " << m_curr_tracelet_idx << std::endl;
-        if (!isRetry) {
-          if (!launch_setting.max_retry) { // Never retry.
-            cur_status.retries_left = 0;
-          } else if (launch_setting.max_retry > 0) { // Finite retries.
+        
+        if (!launch_setting.max_retry) { // Never retry.
+          cur_status.retries_left = 0;
+        } else if (launch_setting.max_retry > 0) { // Finite retries.
+          if (!isRetry) {
             cur_status.retries_left = launch_setting.max_retry;
-          } else { // Retry until success.
-            cur_status.retries_left++; // Keep retries number constant.
+          } else {
+            cur_status.retries_left--;
           }
+        } else { // Retry until success.
+          cur_status.retries_left = 1; // Keep retries number constant.
         }
+        
       }
     };
 
@@ -205,6 +213,9 @@ class MyRWTrace : public IFrontEnd, public Implementation {
       if (cur_status.m_num_req_pending == 0 && m_curr_trace_idx >= m_trace_length) {
         std::cout << "Now: " << m_clk << std::endl;
         std::cout << "Seed: " << launch_setting.seed << std::endl;
+        std::cout << "trace number: " << m_tracelet_length << std::endl;
+        std::cout << "Read number: " << num_read_sent << std::endl;
+        std::cout << "Write number: " << num_write_sent << std::endl;
         access_log.close();
         return true;
       }
@@ -217,6 +228,10 @@ class MyRWTrace : public IFrontEnd, public Implementation {
     }
 
     Trace* get_next_tracelet() {
+      if (m_curr_trace_idx >= m_trace_length) {
+        return nullptr;
+      }
+      // Caution! Comparison between unsigned numbers!
       if (m_curr_tracelet_idx < m_tracelet[m_curr_trace_idx].size()-1) {
         ++m_curr_tracelet_idx;
       } else {

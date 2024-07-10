@@ -3,6 +3,7 @@ Frontend:
   clock_ratio: 1
   path: consecutive.trace
   period: 3
+  # max_retry: 10000
   seed: 1718537219
                 
 
@@ -29,4 +30,4 @@ MemorySystem:
 
   AddrMapper:
     impl: CustomizedMapper
-    mapping: 1RA-14R-1BG-2R-2B-1BG-7C
+    mapping: 1RA-14R-1BG-2R-2B-5C-1BG-2C
