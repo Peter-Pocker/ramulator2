@@ -1,10 +1,14 @@
 Frontend:
   impl: MyRWTrace
   clock_ratio: 1
-  path: consecutive.trace
+  path: trace/1thread_cons_5.trace
+  access_log: memory_access.csv
   period: 3
-  # max_retry: 10000
+  max_retry: -1
   seed: 1718537219
+  shuffle_trace: false
+  shuffle_tracelet: false
+  UNIT_TRANSFER_SIZE: 64
                 
 
 MemorySystem:
@@ -24,10 +28,25 @@ MemorySystem:
     impl: Generic
     Scheduler:
       impl: FRFCFS
+      # impl: EDP_FRFCFS
+      # starve_threshold: 220
     RefreshManager:
       impl: AllBank
     plugins:
+      - ControllerPlugin:
+          impl: TraceRecorder
+          path: ./issue_log
+
+      - ControllerPlugin:
+          impl: CommandCounter
+          # commands_to_count: [ACT, PRE, PREA, PREsb, RD,  WR,  RDA,  WRA, REFab,  REFsb, RFMab,  RFMsb, DRFMab, DRFMsb]
+          commands_to_count: [ACT, PRE, PREA, RD,  WR,  RDA,  WRA, REFab]
+          path: ./cmd_cnt.log
+
+      - ControllerPlugin:
+          impl: InfoRecorder
+          path: ./rowhit.log
 
   AddrMapper:
     impl: CustomizedMapper
-    mapping: 1RA-14R-1BG-2R-2B-5C-1BG-2C
+    mapping: 1RA-14R-2R-2B-7C-2BG

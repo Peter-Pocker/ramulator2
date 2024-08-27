@@ -10,3 +10,4 @@ my.yaml
 *.trace
 plot/
 test.sh
+*.csv

@@ -1,72 +1,101 @@
-# Usage: python3 analyze.py [log] [notes]
+# Usage: python3 analyze.py [-i input_log] [-o output_path] [-n notes] [-p]
 # Encoded in UTF-8
 
+import argparse
 import datetime
-import sys
+import os
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 
-# 读取文本文件，逐行读取数字
-def read_numbers_from_file(file_path):
-    with open(file_path, 'r') as file:
-        numbers = [float(line.strip()) for line in file]
-    return numbers
+def analyze(file_path, fig_name, notes="", print_result=False):
+    # 读取CSV文件
+    data = pd.read_csv(file_path, header=0)
+    
+    stats = {}
 
-# 统计数字的总数、平均数和中位数
-def analyze_numbers(numbers):
-    total = len(numbers)
-    average = np.mean(numbers)
-    median = np.median(numbers)
-    return total, average, median
+    fig, axs = plt.subplots(4, 2, figsize=(12, 16))  # 4行2列的子图，图像大小可调整
+    fig.tight_layout(pad=5.0)  # 调整子图之间的间距
+    
+    # Flatten the axs array for easier indexing
+    axs = axs.flatten()
 
-# 绘制直方图
-def plot_histogram(numbers, bin_width, fig_name='plot.png', title='Latency Distribution'):
-    # 统计数字
-    total, average, median = analyze_numbers(numbers)
-    print(f"Total numbers: {total}")
-    print(f"Average: {average}")
-    print(f"Median: {median}")
-    bins = np.arange(0, max(numbers) + bin_width, bin_width)
-    plt.hist(numbers, bins=bins, edgecolor='black')
-    plt.xlabel('Latency/cycles')
-    plt.ylabel('Frequency')
-    plt.title(title)
-    # 添加总数、平均数、中位数的图注
-    plt.text(0.7, 0.9, f'Total: {total}', transform=plt.gca().transAxes)
-    plt.text(0.7, 0.85, f'Average: {average:.2f}', transform=plt.gca().transAxes)
-    plt.text(0.7, 0.8, f'Median: {median}', transform=plt.gca().transAxes)        
+    # 对每一列进行统计
+    for i, column in enumerate(data.columns):
+        col_data = data[column]
+        mean = col_data.mean()
+        median = col_data.median()
+        amount = len(col_data)
+        stats[column] = {
+            'mean': mean,
+            'median': median,
+            'amount': amount
+        }
+        if print_result:
+            print(f"Latency: {column}")
+            print(f"  Mean: {mean}")
+            print(f"Median: {median}")
+            print(f"Amount: {amount}")
+            print("-" * 30)
+    
+        bin_width = col_data.max() // 20 # Never set less than 20!
+        bins = np.arange(0, col_data.max()+bin_width, bin_width)
+        axs[i].hist(col_data, bins=bins, edgecolor='black')
+        axs[i].set_title(f'{column} Latency Distribution')
+        axs[i].set_xlabel('Latency')
+        axs[i].set_ylabel('Frequency')
+        axs[i].text(0.7, 0.85,  f'Amount: {amount}', transform=axs[i].transAxes)
+        axs[i].text(0.7, 0.9, f'Mean  : {mean:.2f}', transform=axs[i].transAxes)
+        axs[i].text(0.7, 0.95,  f'Median: {median}', transform=axs[i].transAxes)    
+
+        # axs[i].axvline(mean, color='red', linestyle='dashed', linewidth=1, label=f'Mean: {mean:.2f}')
+        # axs[i].axvline(median, color='green', linestyle='dashed', linewidth=1, label=f'Median: {median:.2f}')
+        # axs[i].legend()
+
+    # Hide the 8th subplot (if it exists)
+    if len(data.columns) < 8:
+        axs[-1].axis('off')
+
+    plt.text(0, 1, notes, transform=axs[-1].transAxes)
+
     plt.show()
     # 保存图像
     plt.savefig(fig_name)
-    print(f"Output figure \"{fig_name}\"")
+    print(f"Output figure \"{fig_name}\".")
 
-# 主函数
-def main():
-    args = sys.argv
-    if len(args) > 1:
-        file_path = args[1]
-    else:
-        file_path = 'memory_access.log'
-
-    plot_path = 'plot'
-    # latency统计间隔
-    bin_width = 50
-    # 获取当前时间
-    current_time = datetime.datetime.now()
-    # 格式化时间戳字符串
-    timestamp = current_time.strftime("%Y%m%d_%H%M%S")
-    # 构建带时间戳的文件名
-    plot_name = f"latency_distribution_{timestamp}.png"
-    # 读取数字
-    numbers = read_numbers_from_file(file_path)
-
-    if len(args) > 2:
-        notes = args[2]
-        # 绘制直方图
-        plot_histogram(numbers, bin_width, plot_path+'/'+plot_name, notes)
-    else:
-        plot_histogram(numbers, bin_width, plot_path+'/'+plot_name)
-    
 
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser(description="Process some input and output files.")
+
+    parser.add_argument('-i', '--input', required=False, help='Input log file.')
+    parser.add_argument('-o', '--output', required=False, help='Output picture file.')
+    parser.add_argument('-n', '--notes', required=False, help='Additional description.')
+    parser.add_argument('-p', action='store_true', help='Print the statistics.')
+
+    args = parser.parse_args()
+
+    default_input_log = 'memory_access.csv'
+    default_output_path = '.'
+
+    if args.input:
+        file_path = args.input
+    else:
+        file_path = default_input_log
+
+    if args.output:
+        if not os.path.exists(args.output):
+            analyze(file_path, args.output, args.notes, args.p)
+        elif os.path.isdir(args.output):
+            output_path = args.output
+        else:
+            print(f"File {args.output} already exsits.")
+            exit()
+    else:
+        if not os.path.exists(default_output_path):
+            os.makedirs(default_output_path)
+        output_path = default_output_path
+        
+    current_time = datetime.datetime.now()
+    timestamp = current_time.strftime("%Y_%m_%d_%H_%M_%S")
+
+    analyze(file_path, f"{output_path}/{timestamp}.png", args.notes, args.p)

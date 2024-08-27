@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <random>
 #include <ctime>
+#include <spdlog/spdlog.h>
 
 #include "frontend/frontend.h"
 #include "base/exception.h"
@@ -70,6 +71,8 @@ class MyRWTrace : public IFrontEnd, public Implementation {
       if (!access_log.is_open()) {
         throw ConfigurationError("Unable to open file: {}.", mem_access_log_path_str);
       }
+      access_log << fmt::format("{:>6}, {:>6}, {:>6}, {:>6}, {:>6}, {:>6}, {:>6}", "send", "schedu", "preq", "depart", "issue", "proces", "live") << std::endl;
+
       m_clock_ratio = param<uint>("clock_ratio").required();
       launch_setting.period = param<Clk_t>("period").default_val(1);
       launch_setting.max_retry = param<int32_t>("max_retry").default_val(-1);
@@ -224,7 +227,16 @@ class MyRWTrace : public IFrontEnd, public Implementation {
     
     void finish_read(Request &r) {
       cur_status.m_num_req_pending--;
-      access_log << r.depart - r.arrive << std::endl;
+      std::string time_str = fmt::format("{:6}, {:6}, {:6}, {:6}, {:6}, {:6}, {:6}", 
+                              r.arrive-r.birth, 
+                              r.first_scheduled-r.arrive, 
+                              r.second_scheduled-r.first_scheduled, 
+                              r.depart-r.second_scheduled,
+                              r.depart-r.first_scheduled,
+                              r.depart-r.arrive,
+                              r.depart-r.birth);
+      
+      access_log << time_str << std::endl;
     }
 
     Trace* get_next_tracelet() {

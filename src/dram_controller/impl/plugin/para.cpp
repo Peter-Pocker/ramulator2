@@ -9,6 +9,7 @@
 
 namespace Ramulator {
 
+// 以一定的概率执行VRR命令，用于缓解RowHammer攻击
 class PARA : public IControllerPlugin, public Implementation {
   RAMULATOR_REGISTER_IMPLEMENTATION(IControllerPlugin, PARA, "PARA", "PARA.")
 

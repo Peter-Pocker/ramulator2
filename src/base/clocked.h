@@ -22,6 +22,9 @@ class Clocked {
 
   public:
     virtual void tick() = 0;
+    Clk_t get_clk() {
+      return m_clk;
+    };
 
   public:
     Clocked() {};

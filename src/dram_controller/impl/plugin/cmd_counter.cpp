@@ -56,7 +56,7 @@ class CommandCounter : public IControllerPlugin, public Implementation {
     void finalize() override {
       std::ofstream output(m_save_path);
       for (const auto& [cmd_id, count] : m_command_counters) {
-        output << fmt::format("{}, {}", m_dram->m_commands(cmd_id), count) << std::endl;
+        output << fmt::format("{:<6}: {}", m_dram->m_commands(cmd_id), count) << std::endl;
       }
       output.close();
     }

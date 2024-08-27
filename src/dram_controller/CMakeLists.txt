@@ -16,6 +16,7 @@ target_sources(
   impl/scheduler/bh_scheduler.cpp
   impl/scheduler/blocking_scheduler.cpp
   impl/scheduler/generic_scheduler.cpp
+  impl/scheduler/my_scheduler.cpp
 
   impl/refresh/all_bank_refresh.cpp
 
@@ -28,6 +29,7 @@ target_sources(
   impl/plugin/twice.cpp
   impl/plugin/hydra.cpp
   impl/plugin/rrs.cpp
+  impl/plugin/my_plugin.cpp
 
   impl/plugin/blockhammer/blockhammer_throttler.h 
   impl/plugin/blockhammer/blockhammer_util.h 

@@ -28,7 +28,10 @@ struct Request {
   int command = -1;          // The command that need to be issued to progress the request
   int final_command = -1;    // The final command that is needed to finish the request
 
+  Clk_t birth = -1;   // Clock cycle when the request is created.
   Clk_t arrive = -1;   // Clock cycle when the request arrive at the memory controller
+  Clk_t first_scheduled = -1;   // Clock cycle when the request is first scheduled.
+  Clk_t second_scheduled = -1;   // Clock cycle when the request is scheduled from the active request buffer.
   Clk_t depart = -1;   // Clock cycle when the request depart the memory controller
 
   std::function<void(Request&)> callback;

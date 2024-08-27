@@ -37,7 +37,7 @@ class TraceRecorder : public IControllerPlugin, public Implementation {
       m_ctrl = cast_parent<IDRAMController>();
       m_dram = m_ctrl->m_dram;
 
-      auto sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(fmt::format("{}.ch{}", m_trace_path.string(), m_ctrl->m_channel_id), true);
+      auto sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(fmt::format("{}_ch{}.log", m_trace_path.string(), m_ctrl->m_channel_id), true);
       m_tracer = std::make_shared<spdlog::logger>(fmt::format("trace_recorder_ch{}", m_ctrl->m_channel_id), sink);
       m_tracer->set_pattern("%v");
       m_tracer->set_level(spdlog::level::trace);      
@@ -45,13 +45,32 @@ class TraceRecorder : public IControllerPlugin, public Implementation {
 
     void update(bool request_found, ReqBuffer::iterator& req_it) override {
       m_clk++;
-
+      std::string addr_vec_str;
+      // TODO: 根据Organization来自动匹配打印格式宽度
+      if (req_it->addr_vec.size() == 5) {
+        addr_vec_str = fmt::format("{:2}, {:2}, {:2}, {:>5}, {:>3}",
+            req_it->addr_vec[0],
+            req_it->addr_vec[1],
+            req_it->addr_vec[2],
+            req_it->addr_vec[3],
+            req_it->addr_vec[4]
+        );
+      } else if (req_it->addr_vec.size() == 6) {
+          addr_vec_str = fmt::format("{:2}, {:2}, {:2}, {:2}, {:>5}, {:>3}",
+              req_it->addr_vec[0],
+              req_it->addr_vec[1],
+              req_it->addr_vec[2],
+              req_it->addr_vec[3],
+              req_it->addr_vec[4],
+              req_it->addr_vec[5]
+          );
+      }
       if (request_found) {
         m_tracer->trace(
-          "{}, {}, {}", 
+          "{:>7}, {:>6}, {}", 
           m_clk,
           m_dram->m_commands(req_it->command),
-          fmt::join(req_it->addr_vec, ", ")
+          addr_vec_str
         );
       }
 
