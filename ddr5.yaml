@@ -1,0 +1,55 @@
+Frontend:
+  impl: MyRWTrace
+  clock_ratio: 1
+  path: trace/1thread_cons_6.trace
+  access_log: memory_access.csv
+  period: 3
+  max_retry: -1
+  seed: 1718537219
+  shuffle_trace: false
+  shuffle_tracelet: false
+  UNIT_TRANSFER_SIZE: 64
+                
+
+MemorySystem:
+  impl: GenericDRAM
+  clock_ratio: 1
+
+  DRAM:
+    impl: DDR5
+    org:
+      preset: DDR5_8Gb_x8
+      channel: 1
+      rank: 2
+      channel_width: 64
+    timing:
+      preset: DDR5_3200AN
+    RFM:
+
+
+  Controller:
+    impl: Generic
+    Scheduler:
+      impl: FRFCFS
+      # impl: EDP_FRFCFS
+      # starve_threshold: 220
+    RefreshManager:
+      impl: AllBank
+    plugins:
+      - ControllerPlugin:
+          impl: TraceRecorder
+          path: ./issue_log
+
+      - ControllerPlugin:
+          impl: CommandCounter
+          commands_to_count: [ACT, PRE, PREA, PREsb, RD,  WR,  RDA,  WRA, REFab,  REFsb, RFMab,  RFMsb, DRFMab, DRFMsb]
+          path: ./cmd_cnt.log
+
+      - ControllerPlugin:
+          impl: InfoRecorder
+          path: ./rowhit.log
+
+  AddrMapper:
+    impl: CustomizedMapper
+    mapping: 1RA-3BG-1B-16R-6C
+    # mapping: 1RA-16R-1BG-1B-6C-2BG

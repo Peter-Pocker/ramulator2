@@ -21,7 +21,10 @@ class TraceRecorder : public IControllerPlugin, public Implementation {
     std::filesystem::path m_trace_path; 
     Logger_t m_tracer;
 
+    std::vector<int> m_print_width;
+
     Clk_t m_clk = 0;
+    Clk_t m_latest_cmd = 0; // The time when latest command was issued.
 
   public:
     void init() override { 
@@ -36,6 +39,7 @@ class TraceRecorder : public IControllerPlugin, public Implementation {
     void setup(IFrontEnd* frontend, IMemorySystem* memory_system) override {
       m_ctrl = cast_parent<IDRAMController>();
       m_dram = m_ctrl->m_dram;
+      set_print_width();
 
       auto sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(fmt::format("{}_ch{}.log", m_trace_path.string(), m_ctrl->m_channel_id), true);
       m_tracer = std::make_shared<spdlog::logger>(fmt::format("trace_recorder_ch{}", m_ctrl->m_channel_id), sink);
@@ -45,35 +49,30 @@ class TraceRecorder : public IControllerPlugin, public Implementation {
 
     void update(bool request_found, ReqBuffer::iterator& req_it) override {
       m_clk++;
-      std::string addr_vec_str;
-      // TODO: 根据Organization来自动匹配打印格式宽度
-      if (req_it->addr_vec.size() == 5) {
-        addr_vec_str = fmt::format("{:2}, {:2}, {:2}, {:>5}, {:>3}",
-            req_it->addr_vec[0],
-            req_it->addr_vec[1],
-            req_it->addr_vec[2],
-            req_it->addr_vec[3],
-            req_it->addr_vec[4]
-        );
-      } else if (req_it->addr_vec.size() == 6) {
-          addr_vec_str = fmt::format("{:2}, {:2}, {:2}, {:2}, {:>5}, {:>3}",
-              req_it->addr_vec[0],
-              req_it->addr_vec[1],
-              req_it->addr_vec[2],
-              req_it->addr_vec[3],
-              req_it->addr_vec[4],
-              req_it->addr_vec[5]
-          );
-      }
       if (request_found) {
+        std::string addr_vec_str = fmt::format("{:>{}}", req_it->addr_vec[0], m_print_width[0]);
+        for (int i = 1; i < m_print_width.size(); ++i) {
+          addr_vec_str.append(fmt::format(", {:>{}}", req_it->addr_vec[i], m_print_width[i]));
+        }
         m_tracer->trace(
-          "{:>7}, {:>6}, {}", 
+          "{:>7}, {:>7}, {:>6}, {}", 
+          m_clk - m_latest_cmd,
           m_clk,
           m_dram->m_commands(req_it->command),
           addr_vec_str
         );
+        m_latest_cmd = m_clk;
       }
+    };
 
+    void set_print_width() {
+      for (int i = 0; i < m_dram->m_levels.size(); i++) {
+        int width = 0, size = m_dram->m_organization.count[i];
+        for (; size > 0; ++width) {
+          size = size / 10;
+        }
+        m_print_width.push_back(width > 1 ? width : 2);
+      }
     };
 
 };

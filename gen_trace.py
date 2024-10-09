@@ -18,7 +18,8 @@ def generate_memory_access_file(file_path, num_lines, thread_info, pattern):
                 start_addr, range_size, read_freq, access_size, access_size_weights = thread_info[thread][:5]
                 write_freq = 1 - read_freq
                 operation = random.choices(['R', 'W'], weights=[read_freq, write_freq])[0]
-                address = random.randint(start_addr, start_addr + range_size) & ~(0x03F) # Align to 64.
+                # address = random.randint(start_addr, start_addr + range_size) & ~(0x03F) # Align to 64.
+                address = random.randint(start_addr, start_addr + range_size - 1) & ~(0x03F) # Align to 64.
                 size = random.choices(access_size, weights=access_size_weights)[0]
                 if address+size > (start_addr+range_size) or (size//64 + i) > num_lines:
                     continue
@@ -58,7 +59,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     
     if not args.pattern:
-        pattern = "consecutive"
+        pattern = "random"
     elif args.pattern != "random" and args.pattern != "consecutive":
         print("Unsupported memory access pattern.")
         exit()

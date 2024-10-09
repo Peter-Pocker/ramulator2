@@ -111,17 +111,17 @@ class GenericDRAMController final : public IDRAMController, public Implementatio
 
       // 4. Finally, issue the commands to serve the request
       if (request_found) {
+        ++(req_it->scheduled_cnt);
+        
         if (req_it->first_scheduled == -1) {
           req_it->first_scheduled = m_clk;
-        } else {
-          req_it->second_scheduled = m_clk;
         }
         // If we find a real request to serve
         m_dram->issue_command(req_it->command, req_it->addr_vec);
 
         // If we are issuing the last command, set depart clock cycle and move the request to the pending queue
         if (req_it->command == req_it->final_command) {
-          req_it->second_scheduled = m_clk;
+          req_it->last_scheduled = m_clk;
           if (req_it->type_id == Request::Type::Read) {
             req_it->depart = m_clk + m_dram->m_read_latency;
             pending.push_back(*req_it);

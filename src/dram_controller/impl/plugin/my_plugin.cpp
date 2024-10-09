@@ -39,7 +39,7 @@ class InfoRecorder : public IControllerPlugin, public Implementation {
 
       int channel_n = m_dram->m_organization.count[m_dram->m_levels("channel")];
       int rank_n = m_dram->m_organization.count[m_dram->m_levels("rank")];
-      int bankgroup_n = (m_dram->m_organization.count.size() == 6) ? m_dram->m_organization.count[m_dram->m_levels("bankgroup")] : 1;
+      int bankgroup_n = (m_dram->m_levels.contains("bankgroup")) ? m_dram->m_organization.count[m_dram->m_levels("bankgroup")] : 1;
       int bank_n = m_dram->m_organization.count[m_dram->m_levels("bank")];
 
       m_rowhit_cnt.resize(channel_n);
@@ -66,7 +66,7 @@ class InfoRecorder : public IControllerPlugin, public Implementation {
       }
       if (m_dram->check_rowbuffer_hit(req_it->command, req_it->addr_vec)) {
         ++m_rowhit_sum;
-        if (m_dram->m_organization.count.size() == 6) {
+        if (m_dram->m_levels.contains("bankgroup")) {
           ++(m_rowhit_cnt[req_it->addr_vec[m_dram->m_levels("channel")]]
                       [req_it->addr_vec[m_dram->m_levels("rank")]]
                       [req_it->addr_vec[m_dram->m_levels("bankgroup")]]
@@ -83,7 +83,7 @@ class InfoRecorder : public IControllerPlugin, public Implementation {
     void finalize() override {
       std::ofstream output(m_save_path);
       output << fmt::format("Total row hit count: {}", m_rowhit_sum) << std::endl;
-      if (m_dram->m_organization.count.size() == 6) {
+      if (m_dram->m_levels.contains("bankgroup")) {
         output << "channel, rank, bankgroup, bank: row hit" << std::endl;
       } else {
         output << "channel, rank, bank: row hit" << std::endl;
@@ -97,7 +97,7 @@ class InfoRecorder : public IControllerPlugin, public Implementation {
           for (auto bg : rk) {
             bn_id = 0;
             for (auto bn : bg) {
-              if (m_dram->m_organization.count.size() == 6) {
+              if (m_dram->m_levels.contains("bankgroup")) {
                 output << fmt::format("{:2}, {:2}, {:2}, {:2}: {:6}", ch_id, rk_id, bg_id, bn_id, bn) << std::endl;
               } else {
                 output << fmt::format("{:2}, {:2}, {:2}: {:6}", ch_id, rk_id, bn_id, bn) << std::endl;

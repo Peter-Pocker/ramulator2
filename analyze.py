@@ -1,4 +1,4 @@
-# Usage: python3 analyze.py [-i input_log] [-o output_path] [-n notes] [-p]
+# Usage: python3 analyze.py [-i input_csv] [-o output_fig] [-n notes] [-p]
 # Encoded in UTF-8
 
 import argparse
@@ -10,11 +10,11 @@ import pandas as pd
 
 def analyze(file_path, fig_name, notes="", print_result=False):
     # 读取CSV文件
-    data = pd.read_csv(file_path, header=0)
+    data = pd.read_csv(file_path, header=0, skipinitialspace=True)
     
     stats = {}
 
-    fig, axs = plt.subplots(4, 2, figsize=(12, 16))  # 4行2列的子图，图像大小可调整
+    fig, axs = plt.subplots(2, 4, figsize=(20, 8))  # 4行2列的子图，图像大小可调整
     fig.tight_layout(pad=5.0)  # 调整子图之间的间距
     
     # Flatten the axs array for easier indexing
@@ -38,30 +38,53 @@ def analyze(file_path, fig_name, notes="", print_result=False):
             print(f"Amount: {amount}")
             print("-" * 30)
     
-        bin_width = col_data.max() // 20 # Never set less than 20!
-        bins = np.arange(0, col_data.max()+bin_width, bin_width)
-        axs[i].hist(col_data, bins=bins, edgecolor='black')
-        axs[i].set_title(f'{column} Latency Distribution')
-        axs[i].set_xlabel('Latency')
-        axs[i].set_ylabel('Frequency')
-        axs[i].text(0.7, 0.85,  f'Amount: {amount}', transform=axs[i].transAxes)
-        axs[i].text(0.7, 0.9, f'Mean  : {mean:.2f}', transform=axs[i].transAxes)
-        axs[i].text(0.7, 0.95,  f'Median: {median}', transform=axs[i].transAxes)    
+        if column == 'cmds':
+            freq = {}
+            for item in col_data:
+                if item not in freq:
+                    freq[item] = 1
+                else:
+                    freq[item] += 1
+            sorted_freq = dict(sorted(freq.items()))
+            x = np.arange(len(sorted_freq))
+            axs[i].bar(x, sorted_freq.values())
+            custom_ticks = sorted_freq.keys()
+            axs[i].set_xticks(x, custom_ticks)
+            axs[i].set_title(f'CMDs per Request Distribution')
+            axs[i].set_xlabel('Commands Per Request')
+            axs[i].set_ylabel('Frequency')
+            axs[i].text(0.7, 0.85,  f'Amount: {amount}', transform=axs[i].transAxes)
+            axs[i].text(0.7, 0.9, f'Mean: {mean:.2f}', transform=axs[i].transAxes)
+            axs[i].text(0.7, 0.95,  f'Median: {median}', transform=axs[i].transAxes)    
 
-        # axs[i].axvline(mean, color='red', linestyle='dashed', linewidth=1, label=f'Mean: {mean:.2f}')
-        # axs[i].axvline(median, color='green', linestyle='dashed', linewidth=1, label=f'Median: {median:.2f}')
-        # axs[i].legend()
+        else:
+            if col_data.max() < 20:
+                bin_width = 1
+            else:
+                bin_width = col_data.max() // 20 # Never set less than 20!
+            bins = np.arange(0, col_data.max()+bin_width+1, bin_width)
+            axs[i].hist(col_data, bins=bins, edgecolor='black')
+            axs[i].set_title(f'{column} Latency Distribution')
+            axs[i].set_xlabel('Latency')
+            axs[i].set_ylabel('Frequency')
+            axs[i].text(0.7, 0.85,  f'Amount: {amount}', transform=axs[i].transAxes)
+            axs[i].text(0.7, 0.9, f'Mean: {mean:.2f}', transform=axs[i].transAxes)
+            axs[i].text(0.7, 0.95,  f'Median: {median}', transform=axs[i].transAxes)    
 
     # Hide the 8th subplot (if it exists)
     if len(data.columns) < 8:
         axs[-1].axis('off')
 
-    plt.text(0, 1, notes, transform=axs[-1].transAxes)
+    if notes is not None:
+        fig.suptitle(notes, fontsize=16)
+        plt.tight_layout(rect=[0, 0, 1, 0.95]) 
 
     plt.show()
     # 保存图像
     plt.savefig(fig_name)
     print(f"Output figure \"{fig_name}\".")
+
+    return stats
 
 
 if __name__ == '__main__':
@@ -84,7 +107,10 @@ if __name__ == '__main__':
 
     if args.output:
         if not os.path.exists(args.output):
-            analyze(file_path, args.output, args.notes, args.p)
+            stats = analyze(file_path, args.output, args.notes, args.p)
+            print(f"Average access latency: {stats['process']['mean']}")
+            print(f"Medium access latency : {stats['process']['median']}")
+            exit()
         elif os.path.isdir(args.output):
             output_path = args.output
         else:
@@ -98,4 +124,6 @@ if __name__ == '__main__':
     current_time = datetime.datetime.now()
     timestamp = current_time.strftime("%Y_%m_%d_%H_%M_%S")
 
-    analyze(file_path, f"{output_path}/{timestamp}.png", args.notes, args.p)
+    stats = analyze(file_path, f"{output_path}/{timestamp}.png", args.notes, args.p)
+    print(f"Average access latency: {stats['process']['mean']}")
+    print(f"Medium access latency : {stats['process']['median']}")

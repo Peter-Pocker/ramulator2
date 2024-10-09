@@ -71,7 +71,7 @@ class MyRWTrace : public IFrontEnd, public Implementation {
       if (!access_log.is_open()) {
         throw ConfigurationError("Unable to open file: {}.", mem_access_log_path_str);
       }
-      access_log << fmt::format("{:>6}, {:>6}, {:>6}, {:>6}, {:>6}, {:>6}, {:>6}", "send", "schedu", "preq", "depart", "issue", "proces", "live") << std::endl;
+      access_log << fmt::format("{:>6}, {:>6}, {:>6}, {:>6}, {:>6}, {:>6}, {:>6}, {:>2}", "send", "schedule", "preq", "depart", "issue", "process", "live", "cmds") << std::endl;
 
       m_clock_ratio = param<uint>("clock_ratio").required();
       launch_setting.period = param<Clk_t>("period").default_val(1);
@@ -227,14 +227,15 @@ class MyRWTrace : public IFrontEnd, public Implementation {
     
     void finish_read(Request &r) {
       cur_status.m_num_req_pending--;
-      std::string time_str = fmt::format("{:6}, {:6}, {:6}, {:6}, {:6}, {:6}, {:6}", 
+      std::string time_str = fmt::format("{:6}, {:6}, {:6}, {:6}, {:6}, {:6}, {:6}, {:2}", 
                               r.arrive-r.birth, 
                               r.first_scheduled-r.arrive, 
-                              r.second_scheduled-r.first_scheduled, 
-                              r.depart-r.second_scheduled,
+                              r.last_scheduled-r.first_scheduled, 
+                              r.depart-r.last_scheduled,
                               r.depart-r.first_scheduled,
                               r.depart-r.arrive,
-                              r.depart-r.birth);
+                              r.depart-r.birth,
+                              r.scheduled_cnt);
       
       access_log << time_str << std::endl;
     }
