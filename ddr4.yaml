@@ -1,9 +1,9 @@
 Frontend:
   impl: MyRWTrace
   clock_ratio: 1
-  path: trace/1thread_cons_6.trace
+  path: trace/1thread_rand_readonly_1M_22_addrbit.trace
   access_log: memory_access.csv
-  period: 5
+  period: 4
   max_retry: -1
   seed: 1718537219
   shuffle_trace: false
@@ -49,4 +49,4 @@ MemorySystem:
 
   AddrMapper:
     impl: CustomizedMapper
-    mapping: 1RA-16R-2B-6C-2BG-1C
+    mapping: 2BG-2B-1RA-16R-7C

@@ -26,7 +26,7 @@ echo '------- Post-simulation Process -----'
 if [ ! -d $output_fig_dir ]; then
     mkdir -p $output_fig_dir
 fi
-python interval.py -i $cmd_file -o $output_fig_dir -n "$trace_path
-$mapping"
-python analyze.py -i $latency_file -o $output_fig_dir -n "$trace_path
-$mapping"
+python interval.py -i $cmd_file -o $output_fig_dir -n "trace: $trace_path
+mapper: $mapping"
+python latency_bd.py -i $latency_file -o $output_fig_dir -n "trace: $trace_path
+mapper: $mapping"

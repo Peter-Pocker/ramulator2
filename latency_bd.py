@@ -1,20 +1,20 @@
-# Usage: python3 analyze.py [-i input_csv] [-o output_fig] [-n notes] [-p]
+# Usage: python3 latency_bd.py [-i input_csv] [-o output_fig] [-n notes] [-p]
 # Encoded in UTF-8
 
 import argparse
 import datetime
 import os
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-def analyze(file_path, fig_name, notes="", print_result=False):
-    # 读取CSV文件
+def draw_latency_breakdown(file_path, fig_name, notes="", print_result=False):
     data = pd.read_csv(file_path, header=0, skipinitialspace=True)
-    
     stats = {}
 
-    fig, axs = plt.subplots(2, 4, figsize=(20, 8))  # 4行2列的子图，图像大小可调整
+    fig, axs = plt.subplots(2, 4, figsize=(20, 8))
     fig.tight_layout(pad=5.0)  # 调整子图之间的间距
     
     # Flatten the axs array for easier indexing
@@ -75,14 +75,14 @@ def analyze(file_path, fig_name, notes="", print_result=False):
     if len(data.columns) < 8:
         axs[-1].axis('off')
 
+    super_title = 'Latency Breakdown'
     if notes is not None:
-        fig.suptitle(notes, fontsize=16)
-        plt.tight_layout(rect=[0, 0, 1, 0.95]) 
-
-    plt.show()
-    # 保存图像
+        super_title = super_title + '\n' + notes
+    fig.suptitle(super_title, fontsize=16)
+    plt.tight_layout(rect=[0, 0, 1, 0.95]) 
     plt.savefig(fig_name)
-    print(f"Output figure \"{fig_name}\".")
+    plt.close()
+    print(f"Output picture \"{fig_name}\".")
 
     return stats
 
@@ -90,24 +90,18 @@ def analyze(file_path, fig_name, notes="", print_result=False):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Process some input and output files.")
 
-    parser.add_argument('-i', '--input', required=False, help='Input log file.')
+    parser.add_argument('-i', '--input', required=False, help='Input log file.', default='memory_access.csv')
     parser.add_argument('-o', '--output', required=False, help='Output picture file.')
     parser.add_argument('-n', '--notes', required=False, help='Additional description.')
     parser.add_argument('-p', action='store_true', help='Print the statistics.')
 
     args = parser.parse_args()
 
-    default_input_log = 'memory_access.csv'
     default_output_path = '.'
-
-    if args.input:
-        file_path = args.input
-    else:
-        file_path = default_input_log
 
     if args.output:
         if not os.path.exists(args.output):
-            stats = analyze(file_path, args.output, args.notes, args.p)
+            stats = draw_latency_breakdown(args.input, args.output, args.notes, args.p)
             print(f"Average access latency: {stats['process']['mean']}")
             print(f"Medium access latency : {stats['process']['median']}")
             exit()
@@ -124,6 +118,4 @@ if __name__ == '__main__':
     current_time = datetime.datetime.now()
     timestamp = current_time.strftime("%Y_%m_%d_%H_%M_%S")
 
-    stats = analyze(file_path, f"{output_path}/{timestamp}.png", args.notes, args.p)
-    print(f"Average access latency: {stats['process']['mean']}")
-    print(f"Medium access latency : {stats['process']['median']}")
+    stats = draw_latency_breakdown(args.input, f"{output_path}/latency_breakdown_{timestamp}.png", args.notes, args.p)

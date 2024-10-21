@@ -1,4 +1,4 @@
-# Usage: python3 gen_trace.py -n lines -f thread_yaml [-o output_file] [-p pattern]
+# Usage: python3 gen_trace.py -n lines -f thread_yaml [-o output_file] [-p pattern(random/stream)]
 # Encoded in UTF-8
 
 import argparse
@@ -6,6 +6,7 @@ import random
 import yaml
 
 def generate_memory_access_file(file_path, num_lines, thread_info, pattern):
+    print("Generating...")
     threads = list(thread_info.keys())
     weights = [thread_info[thread][5] for thread in threads]
     address_dict = {key: value[0] for key, value in thread_info.items()}
@@ -29,7 +30,7 @@ def generate_memory_access_file(file_path, num_lines, thread_info, pattern):
                     address += 64
                     i += 1
 
-        elif pattern == "consecutive":
+        elif pattern == "stream":
             # 完全连续
             for _ in range(num_lines):
                 thread = random.choices(threads, weights=weights)[0]
@@ -45,7 +46,9 @@ def generate_memory_access_file(file_path, num_lines, thread_info, pattern):
             print("Unsupported pattern.")
             return
 
-    print(f"Trace has been written into \"{file_path}\".")
+    print(f"Trace file    : \"{file_path}\"")
+    print(f"Request number: {num_lines}")
+    print(f"Trace pattern : {pattern}")
 
 
 if __name__ == '__main__':
@@ -53,8 +56,8 @@ if __name__ == '__main__':
 
     parser.add_argument('-n', '--number', type=int, required=True, help='Number of traces.')
     parser.add_argument('-f', '--file', required=True, help='YAML file that descripts thread info.')
-    parser.add_argument('-o', '--output', required=False, help='Output trace file name.')
-    parser.add_argument('-p', '--pattern', required=False, help='Memory access pattern.')
+    parser.add_argument('-o', '--output', required=True, help='Output trace file name.')
+    parser.add_argument('-p', '--pattern', required=False, help='Memory access pattern.', default='random')
 
     args = parser.parse_args()
     
