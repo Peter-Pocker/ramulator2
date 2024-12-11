@@ -7,6 +7,7 @@ class GenericDRAMController final : public IDRAMController, public Implementatio
   RAMULATOR_REGISTER_IMPLEMENTATION(IDRAMController, GenericDRAMController, "Generic", "A generic DRAM controller.");
   private:
     std::deque<Request> pending;          // A queue for read requests that are about to finish (callback after RL)
+    std::deque<Request> pending_write;    // A queue for write requests that are about to finish (callback after WL)
 
     ReqBuffer m_active_buffer;            // Buffer for requests being served. This has the highest priority 
     ReqBuffer m_priority_buffer;          // Buffer for high-priority requests (e.g., maintenance like refresh).
@@ -94,8 +95,9 @@ class GenericDRAMController final : public IDRAMController, public Implementatio
     void tick() override {
       m_clk++;
 
-      // 1. Serve completed reads
+      // 1. Serve completed reads and writes.
       serve_completed_reads();
+      serve_completed_writes();
 
       m_refresh->tick();
 
@@ -126,7 +128,8 @@ class GenericDRAMController final : public IDRAMController, public Implementatio
             req_it->depart = m_clk + m_dram->m_read_latency;
             pending.push_back(*req_it);
           } else if (req_it->type_id == Request::Type::Write) {
-            // TODO: Add code to update statistics
+            req_it->depart = m_clk + m_dram->m_write_latency;
+            pending_write.push_back(*req_it);
           }
           buffer->remove(req_it);
         } else {
@@ -157,7 +160,8 @@ class GenericDRAMController final : public IDRAMController, public Implementatio
           // Request received data from dram
           if (req.depart - req.arrive > 1) {
             // Check if this requests accesses the DRAM or is being forwarded.
-            // TODO add the stats back
+            // The request read data from the recentest write request.
+
           }
 
           if (req.callback) {
@@ -170,6 +174,31 @@ class GenericDRAMController final : public IDRAMController, public Implementatio
       };
     };
 
+    /**
+     * @brief    Helper function to serve the completed write requests
+     * @details
+     * This function is called at the beginning of the tick() function.
+     * It checks the pending queue to see if the top request has sent data to DRAM.
+     * If so, it finishes this request by calling its callback and poping it from the pending queue.
+     */
+    void serve_completed_writes() {
+      if (pending_write.size()) {
+        // Check the first pending request
+        auto& req = pending_write[0];
+        if (req.depart <= m_clk) {
+          if (req.depart - req.arrive > 1) {
+            // Check if this requests accesses the DRAM or is being forwarded.
+            // TODO add the stats back
+          }
+
+          if (req.callback) {
+            // If the request comes from outside (e.g., processor), call its callback
+            req.callback(req);
+          }
+          pending_write.pop_front();
+        }
+      };
+    };
 
     /**
      * @brief    Checks if we need to switch to write mode
@@ -190,7 +219,16 @@ class GenericDRAMController final : public IDRAMController, public Implementatio
 
     /**
      * @brief    Helper function to find a request to schedule from the buffers.
-     * 
+     * @details
+     * Schedule priority:
+     * 1. Request being processing (in active buffer) and it should be ready.
+     * 2. Priority Request (in priority buffer, for example, REFRESH request) and it should be ready.
+     *    If there exsits a priority request but it isn't ready yet, the controller won't issue any 
+     *    command but wait util the priority request is ready.
+     * 3. Read/Write request (in read/write buffer) and it should be ready.
+     *    Whether it schedules a read or write request depends on the read/write mode policy.
+     * If the scheduled request would interrupt a request in process (request in active buffer), the 
+     * request won't be scheduled and controller won't issue a command.
      */
     bool schedule_request(ReqBuffer::iterator& req_it, ReqBuffer*& req_buffer) {
       bool request_found = false;
@@ -215,6 +253,7 @@ class GenericDRAMController final : public IDRAMController, public Implementatio
             /* 这里的判断条件是不是有些多余？(m_priority_buffer.size() != 0)一定是true，要不然代码根本不会执行到这里来。
               为什么这里要用&而非&&
             */
+            // 如果有 priority request，但是还不ready，那就等，controller就暂时不执行其他命令
             return false;
           }
         }

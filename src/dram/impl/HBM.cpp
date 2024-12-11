@@ -284,6 +284,8 @@ class HBM : public IDRAM, public Implementation {
 
       // Set read latency
       m_read_latency = m_timing_vals("nCL") + m_timing_vals("nBL");
+      // Set write latency
+      m_write_latency = m_timing_vals("nCWL") + m_timing_vals("nBL");
 
       // Populate the timing constraints
       #define V(timing) (m_timing_vals(timing))

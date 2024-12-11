@@ -54,7 +54,8 @@ class IDRAM : public Clocked<IDRAM> {
 
     TimingCons m_timing_cons;           // The actual timing constraints used by Ramulator's DRAM model
 
-    Clk_t m_read_latency = -1;          // Number of cycles needed between issuing RD command and receiving data.
+    Clk_t m_read_latency = -1;          // Number of cycles needed between issuing RD command and all data received. RL=AL+CL+BL
+    Clk_t m_write_latency = -1;         // Number of cycles needed between issuing WR command and all data sent to DRAM. WL=AL+CWL+BL
 
 
   /************************************************

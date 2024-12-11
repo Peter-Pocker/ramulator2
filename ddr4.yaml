@@ -1,7 +1,7 @@
 Frontend:
   impl: MyRWTrace
   clock_ratio: 1
-  path: trace/1thread_rand_readonly_1M_22_addrbit.trace
+  path: trace/1thread_cons_1.trace
   access_log: memory_access.csv
   period: 4
   max_retry: -1
